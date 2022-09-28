@@ -6,25 +6,14 @@ export default class Order {
     private items: Array<OrderItem>;
     private coupons: Array<Coupon>;
 
-    constructor(
-        private readonly cpf: string,
-        private readonly cpfService: CpfService){
-            this.cpfService = cpfService;
-            if(!cpfService.validate(cpf)) throw new Error("Invalid CPF");
-            this.cpf = cpf;
-            this.items = [];
-            this.coupons =[];
-        }
+    constructor(cpf: string, cpfService: CpfService) {
+        const isInvalidCpf = !cpfService.validate(cpf);
+        if (isInvalidCpf) throw new Error("Invalid CPF");
+        this.items = [];
+        this.coupons = [];
+    }
 
-    public calcTotalPrice(): number{
-        let totalPrice = 0;
-        this.items.forEach(item=> totalPrice += item.$price);
-        return totalPrice;
-    }    
-    public getItems():Array<OrderItem>{
-        return this.items;
-    }    
-    public withItems(items: Array<OrderItem>){
+    public addItems(items: Array<OrderItem>){
         this.items = items;
     }
 
@@ -32,23 +21,37 @@ export default class Order {
         this.coupons.push(coupon);
     }
 
-	public get $items(): Array<OrderItem> {
-		return this.items;
-	}
+    public getPrice(){
+        const totalPrice = this.calcTotalPrice();
+        const discounts =  this.calcDiscount(totalPrice);
+        return totalPrice - discounts;
+    }
 
- 
-	public get $coupons(): Array<Coupon> {
-		return this.coupons;
-	}
+    public calcDiscount(totalPrice: number){
+        const discounts = this.getAllDiscounts(totalPrice);
+        return discounts;
+    }
+    
+    public getItems():Array<OrderItem>{
+        return this.items;
+    }    
 
- 
-	public set $items(value: Array<OrderItem>) {
-		this.items = value;
-	}
+    private calcTotalPrice(): number{
+        let totalPrice = 0;
+        this.items.forEach(item=> totalPrice += item.$price);
+        return totalPrice;
+    }
 
- 
-	public set $coupons(value: Array<Coupon>) {
-		this.coupons = value;
-	}
+    public getAllDiscounts(totalPrice: number){
+        const couponDiscounts = this.getCouponsDiscount(totalPrice);
+        return couponDiscounts;
+    }
+
+    private getCouponsDiscount(totalPrice: number): number{
+        if(this.coupons.length === 0) return 0;
+        let couponsPercentage = 0;
+        this.coupons.forEach(coupon => couponsPercentage += coupon.percentage);     
+        return totalPrice * couponsPercentage / 100 ; 
+     }
 
 }
